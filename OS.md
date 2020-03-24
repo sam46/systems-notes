@@ -155,6 +155,7 @@ soft link:
 - works cross filesystems
 
 #### Caching  
+```
   applications  
       |  
      vfs  
@@ -162,7 +163,7 @@ soft link:
    fs1  fs2   
     \   /  
      disk  
-  
+```
 where to stick the cache?  
 **above vfs:**  
 - sees file contents only  
@@ -170,7 +171,7 @@ where to stick the cache?
 - `cache` (aka pagecache) in `/proc/meminfo`, `free`, and `vmstat`   
 
 **below actual filesystem:**  
-- sees disk blocks, i.e. file contents and metadata, but to avoid storing file contents twice (in `buffer` and in `cache`),  linux only stores file contents in `cache` and the `buffer` points to the `cache`  
+- sees disk blocks, i.e. file contents and metadata, but to avoid storing file contents twice (in `buffer` and in `cache`),  linux only stores file contents in `cache`, while the `buffer` points to `cache`  
 - `buffers` in `/proc/meminfo`, `free`, and `vmstat`  
 
 
