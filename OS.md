@@ -154,23 +154,23 @@ soft link:
 - name --> name mapping
 - works cross filesystems
 
-#### Caching
-  applications
-      |
-     vfs
-    /   \
-   fs1  fs2 
-    \   /
-     disk
-
+#### Caching  
+  applications  
+      |  
+     vfs  
+    /   \  
+   fs1  fs2   
+    \   /  
+     disk  
+  
 where to stick the cache?  
 **above vfs:**  
 - sees file contents only  
 - doesn't see fs metadata (e.g. inodes)  
-- `cache` (aka pagecache) in `/proc/meminfo`, `free`, and `vmstat`  
+- `cache` (aka pagecache) in `/proc/meminfo`, `free`, and `vmstat`   
 
 **below actual filesystem:**  
-- sees disk blocks, i.e. file contents and metadata, but to avoid storing file contents twice (in `buffer` and in `cache`), linux only stores file contents in `cache` and the `buffer` points to the `cache` 
+- sees disk blocks, i.e. file contents and metadata, but to avoid storing file contents twice (in `buffer` and in `cache`),  linux only stores file contents in `cache` and the `buffer` points to the `cache`  
 - `buffers` in `/proc/meminfo`, `free`, and `vmstat`  
 
 
