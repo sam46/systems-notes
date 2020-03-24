@@ -25,7 +25,15 @@ a memory segment contains 1 or more sections
 - used by linker/dynamic-linker/relocation
 - refrences 0 or more sections
 
-### MMAP
+
+### Loader
+uses mmap to lazily load binary from disk and uses the page cache (see below)  
+- binaries/libraries are shared between process automagically  
+- unused parts of binaries/libraries are automagically flushed out of memory 
+
+### Virtual Memory
+
+#### MMAP
 lazy by default, can be set to eager by passing flag (POPULATE)  
 
 - a usecase: reading files... faster since we don't have to make many syscalls  
@@ -46,21 +54,25 @@ anonymous is:
 - its contents are initialized to zero  
 malloc uses anon mmap!  
 
-### Loader
-uses mmap to lazily load binary from disk and uses the page cache (see below)  
-- binaries/libraries are shared between process automagically  
-- unused parts of binaries/libraries are automagically flushed out of memory  
-
-### Page cache
-- buffer cache and page cache (block vs file) have been combined. Now there's only The Page Cache!  
-- page cache (previouly buffer/page cache): caching disk "pages" in ram  
+### Page cache/buffer cache
+- see filesystem cache below!
 - swap has nothing to do with the page cache: program data saved to disk. Completely different!  
-
 - non-dirty page cache pages are the first to go if system is tight on memory. They're just discarded since they're already on disk.  
-  
-### Virtual Memory
-**should be able to explain most if not all of `/proc/meminfo`**  
+- most file I/O is driven by virutal memory's page cache:
+  try running `free -h` before and after running `python -c "print 'a'*(4000*2**20)" > ~/f.bin` 
+- flush page cache: `echo 1 > /proc/sys/vm/drop_caches` 
 
+### swap
+store processes data on disk  
+`free -h`
+
+**should be able to explain most of `/proc/meminfo`**  
+[https://github.com/torvalds/linux/blob/master/Documentation/filesystems/proc.txt](https://github.com/torvalds/linux/blob/master/Documentation/filesystems/proc.txt)
+
+shared memory (shmem):
+- shared memory + `tmpfs` (`df` to see all `tmpfs` mounts)
+- `shared` column in `free`
+- `tmpfs` is basically ram disk
 
 ## Networking
 
@@ -109,7 +121,7 @@ at least 3 datastructures are needed:
 ### Inode (aka index inode)
   
 An inode:  
-- each inode is named and located by a number  
+- each inode is named and located by a number: `ls -i`
 - stores location of file's data blocks on disk  
 - stores file metadata: permissions, various timestamps  
   
@@ -117,7 +129,7 @@ ext4:
 - amount of inodes is determined at format time!  
 - inode takes space on disk (256 bytes == 1/16th of a block)  
 - tradoff: more inodes == more files, but less space for data blocks   
-- default: 1 inode for every 16 KB of data blocks (but configurable at format time)  
+- default: 1 inode for every 16 KB of data blocks (configurable at format time)  
   
 How to retrieve (a specific) disk block given an inode and offset?  
 - multilevel indexing:   
@@ -141,3 +153,26 @@ hard link:
 soft link:
 - name --> name mapping
 - works cross filesystems
+
+#### Caching
+  applications
+      |
+     vfs
+    /   \
+   fs1  fs2 
+    \   /
+     disk
+
+where to stick the cache?  
+**above vfs:**  
+- sees file contents only  
+- doesn't see fs metadata (e.g. inodes)  
+- `cache` (aka pagecache) in `/proc/meminfo`, `free`, and `vmstat`  
+
+**below actual filesystem:**  
+- sees disk blocks, i.e. file contents and metadata, but to avoid storing file contents twice (in `buffer` and in `cache`), linux only stores file contents in `cache` and the `buffer` points to the `cache` 
+- `buffers` in `/proc/meminfo`, `free`, and `vmstat`  
+
+
+
+  
