@@ -1,12 +1,12 @@
 OS NOTES  
 
 ### Garbage Collection
-#### reference counting
-#### tracing
-##### mark-and-sweep
-##### mark-and-copy
+##### reference counting
+##### tracing
+- mark-and-sweep
+- mark-and-copy
 
-### Elf 
+### ELF
 - portable format!
 - file header: info like 64 vs 32bit, target OS (Linux, FreeBSD, Solaris, System V, ...)  
 - sections: actual data or metadata: .text, .data, .rdata  
@@ -22,21 +22,22 @@ a memory segment contains 1 or more sections
 - etc...  
 
 #### Section header:
-- used by linker/dynamic-linker/relocation
-- refrences 0 or more sections
+- used by linker/dynamic-linker/relocation  
+- refrences 0 or more sections  
 
 
 ### Loader
 uses mmap to lazily load binary from disk and uses the page cache (see below)  
 - binaries/libraries are shared between process automagically  
-- unused parts of binaries/libraries are automagically flushed out of memory 
+- unused parts of binaries/libraries are automatically flushed out of memory  
 
 ### Virtual Memory
 
 #### MMAP
-lazy by default, can be set to eager by passing flag (POPULATE)  
-
-- a usecase: reading files... faster since we don't have to make many syscalls  
+- lazy by default  
+- can be set to eager by passing POPULATE flag, or   
+  using mlock (pages are guaranteed to always be resident in RAM)  
+- a usecase: reading files... faster because it avoids many `read` syscalls    
 
 ##### shared vs private:
 - shared: Share this mapping. Updates to the mapping are visible to  
@@ -58,12 +59,12 @@ malloc uses anon mmap!
 - see filesystem cache below!
 - swap has nothing to do with the page cache: program data saved to disk. Completely different!  
 - non-dirty page cache pages are the first to go if system is tight on memory. They're just discarded since they're already on disk.  
-- most file I/O is driven by virutal memory's page cache:
+- most file I/O is driven by virtual memory's page cache:
   try running `free -h` before and after running `python -c "print 'a'*(4000*2**20)" > ~/f.bin` 
 - flush page cache: `echo 1 > /proc/sys/vm/drop_caches` 
 
-### swap
-store processes data on disk  
+### Swap
+store processes data on disk    
 `free -h`
 
 **should be able to explain most of `/proc/meminfo`**  
@@ -173,7 +174,24 @@ where to stick the cache?
 **below actual filesystem:**  
 - sees disk blocks, i.e. file contents and metadata, but to avoid storing file contents twice (in `buffer` and in `cache`),  linux only stores file contents in `cache`, while the `buffer` points to `cache`  
 - `buffers` in `/proc/meminfo`, `free`, and `vmstat`  
-
-
-
+   
+Caching policy:  
+- write-through:  
+writes to cache immediately make it to disk: slow writes, fast reads, safe  
+- write-back:    
+writes to cache make it to disk asynchronously: fast writes and reads, risky  
+`sync`/`fsync` flush cache to disk  
   
+Recovering from incosistencies:  
+(writing a single disk block is assumed to be atomic!)  
+- `fsck` checks entire file system: slow!  
+- **journaling:**  
+  - record changes to be made in a journal (a circular log)  
+  - check them off as writes make it to disk (aka checkpointing)  
+  - Everything before the last checkpoint is assumed to have safely
+    made it to disk  
+  - Anything after the last ckeckpoint may/may not have made it. We only need to check entries
+    since last checkpoint  
+  - much faster!  
+  - ext4 is a journaling fs  
+   
