@@ -1,5 +1,5 @@
-OS NOTES  
-
+# OS NOTES  
+  
 ### Garbage Collection
 ##### reference counting
 ##### tracing
@@ -107,7 +107,17 @@ protocols: IPv4/IPv6, ICMP, WireGuard, IPsec
 
 
 ## File systems (FS)
-  
+
+File:
+- regular file
+- special file
+  - block
+  - character
+  - named pipe (aka. FIFO file): in-memory like regular pipes, but have a file discriptor, so can be shared by processes
+  - socket
+    - Unix Domain Socket
+    - Network Socket (TCP/stream, UDP/datagram, RAW)
+
 Some steps required to write data to end of some file:  
 - find empty disk blocks and mark them as in use  
 - associate these blocks with the file  
@@ -194,4 +204,42 @@ Recovering from incosistencies:
     since last checkpoint  
   - much faster!  
   - ext4 is a journaling fs  
-   
+     
+  
+  
+# Misc.
+
+#### poll/select:
+Need to read from (say) 3 file descriptors, each may block of it's not currently readable/writable (aka. ready)
+naively:
+```
+read(fd1)
+read(fd2)
+read(fd3)
+```
+can't block on more than one fd at once (assuming 1 thread).
+e.g. Might block on fd1 while fd2 is actually ready and a `read` wouldn't block.
+  
+- Solution, nonblocking IO:   
+`read(fd)` returns error without blocking if fd currently not readable. Application needs to continuously poll, wasting cpu.
+- Solution, multiplexed IO (`select`/`poll`):  
+blocks on all fd's **at once**, then issue nonblocking read on the ready fd's:
+```
+select(fd1,fd2,...,timeout)
+```
+sleeps until an fd is ready, or a time out, then issue a `read` on the ready fd, which won't block.  
+in other words: blocking (if we choose to) `select` on multiple fd's **at once**, followed by nonblocking read.  
+note: 
+  - depending on the timeout, `select` can block forever, return immediately, or until the timeout  
+  - `select`/`poll` is O(n) in number of fds, `epoll` is more efficient!
+
+#### level-triggred vs edge-triggred event and epoll
+  
+  
+### Zombies
+- parent process terminates before child ---> child's parent becomes `init`  
+- When a process terminates, it is not immediately removed from the system but parts of the it
+  are kept resident in memory to allow the parent to inquire about its status upon terminating (aka `wait`)  
+- once parent `wait()`ed on the child process, it's fully destroyed  
+- zombie: process that terminated but hasn't yet been `wait`ed upon  
+- `init` routinely `wait`s on all of its children  
