@@ -202,8 +202,14 @@ in other words: blocking (if we choose to) `select` on multiple fd's **at once**
 note: 
   - depending on the timeout, `select` can block forever, return immediately, or until the timeout  
   - `select`/`poll` is O(n) in number of fds, `epoll` is more efficient!
-
-#### level-triggred vs edge-triggred event and epoll
+  
+  
+#### level-triggred vs edge-triggred
+- level-triggered: get a list of every file descriptor you’re interested in that is readable   
+- edge-triggered: get notifications every time a file descriptor becomes readable   
+    
+### Async IO (AIO)
+unlike `poll`/`select`/`epoll`, application doesn't check if fs's are ready. It registers a handler that the OS will call if fd is ready.  
   
   
 ### Zombies
