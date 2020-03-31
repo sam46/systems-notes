@@ -207,11 +207,9 @@ note:
 #### level-triggred vs edge-triggred
 - level-triggered: get a list of every file descriptor you’re interested in that is readable   
 - edge-triggered: get notifications every time a file descriptor becomes readable   
-    
-### Async IO (AIO)
-unlike `poll`/`select`/`epoll`, application doesn't check if fs's are ready. It registers a handler that the OS will call if fd is ready.  
   
   
+
 ### Zombies
 - parent process terminates before child ---> child's parent becomes `init`  
 - When a process terminates, it is not immediately removed from the system but parts of the it
