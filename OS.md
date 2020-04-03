@@ -117,7 +117,7 @@ How to retrieve (a specific) disk block given an inode and offset?
 inode points to data blocks and an "indirect block", indirect blocks points to more data blocks and an indirect block, so on. This works well (time & space) for large and small files.  
   
 ### Directory
-- contains (filename --> inode number) mappings
+- contains (filename --> inode number) mappings (aka dentry??)
 
 steps for open("/etc/f.txt"):
 - "/" probably has hardcoded inode num (2)
@@ -174,7 +174,14 @@ Recovering from incosistencies:
     since last checkpoint  
   - much faster!  
   - ext4 is a journaling fs  
-     
+  
+  
+##### stracing `ls /home/sam`  
+- `stat("/home/sam") ` returns stats, like inode num (`x`)  
+- `fd = openat(x)`  opens directory using its inode num `x`  
+- `fstat(fd)` get the same stats again, this time using the open fd (why??)  
+- `getdents(fd)` returns dentries in directory: [(filename, inode), (filename, inode), ...]  
+- `write(1, "...")` write out all filenames   
   
   
 # Misc.
