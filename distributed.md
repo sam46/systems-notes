@@ -38,7 +38,7 @@ strong consistency: in the presence of a partition, some nodes/replicas are unav
 consensus/majority/quorum protocol:
 - always choose odd number of replicas/nodes
 - clients talk to leader
-- leader "commits" and responds to client **_only after_** ensuring majority of nodes recieved the request too (i.e. the leader does the replication)
+- leader "commits" and responds to client **_only after_** ensuring majority of nodes recieved the request too (i.e. the leader handles/coordinates the replication)
 - periodic re-elections. Candidate needs a majority vote to become leader
 - every node maintains a log + other metadata (also written to disk for crash recovery)
 - log contains the (application) state entries (+ election term with each entry)
@@ -48,3 +48,24 @@ consensus/majority/quorum protocol:
 - log is used for getting crashed or unavailable/cut-off nodes back up to speed 
 - log contains entire application state from beginning of time: 
   - gets big so _"Snapshotting"_ is employed: `[x=1,x=2,x=3,y=9]` can be compacted to `[x=1,y=9]`
+
+# CRDTs (Redis)
+
+## Convergent CRDTs
+- eventual-consistency, lazy model
+- each replica handles clients requests and updates local state directly
+- gossip: each replica sends its state or updates to other replicas. No leader
+- when recieving message from other replicas, a `merge(local state, other replic's state)` is used for _join_ing states
+
+- Example: _Likes-counter_ service (aka a G-Counter, aka Grow-Only Counter)
+  - (initial) state (local per-node) is: `[0,0,0]` (for a 3-replicas service)
+  - on client _put_ request to node#1: it updates its state to say `[0,5,0]`
+  - on recieving gossip message from another node: update state to `merge([0,5,0],[2,3,4])`, so `[2,5,4]` (coordinate-wise max)
+  - on client _get_ request: return the state sum, e.g. `sum([2,5,4]) = 11`
+- other replicas may give different responses, but eventually (if clients `put` stop) all replicas converge to a global state
+- state _relation_ needs to be:
+ - commutative and associative: must be able to handle gossip-updates in any order
+ - idempotent: must be able to handle duplicate/identitcal gossip-updates any number of times
+ - [join semi-lattice](https://en.wikipedia.org/wiki/Semilattice): i.e. it's partial order (not every pair of states needs to be comparable), but should still be able to join any two states and obtain a state that's greater than both. e.g. `(1,0,0)` and `(0,1,0)` aren't comparable, but `(1,1,0)` is `>` than both.
+ - 👆 the join/merge monotonically-increases the state
+- easy to implement, but a bit chatty, and not all problems can be modeled with CRDTs
