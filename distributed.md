@@ -32,3 +32,19 @@ inconsistency during a network partition, in a model that's supposed to guarntee
 - active: client sends to every replica
 - passive: client talks to leader. leader handles replication
 - lazy: client sends to any node, replication happens in the background (e.g. gossip protocols)
+
+# Raft replication (etcd)
+strong consistency: in the presence of a partition, some nodes/replicas are unavailable
+consensus/majority/quorum protocol:
+- always choose odd number of replicas/nodes
+- clients talk to leader
+- leader "commits" and responds to client **_only after_** ensuring majority of nodes recieved the request too (i.e. the leader does the replication)
+- periodic re-elections. Candidate needs a majority vote to become leader
+- every node maintains a log + other metadata (also written to disk for crash recovery)
+- log contains the (application) state entries (+ election term with each entry)
+- split-brain fault-tolerance during a partition:
+  - minority partition's nodes can't successfully elect a leader, so they've all effectively become un-available, and they wont recieve any updates.
+  - majority partition's nodes can elect a leader (if necessary), and just operate as normal
+- log is used for getting crashed or unavailable/cut-off nodes back up to speed 
+- log contains entire application state from beginning of time: 
+  - gets big so _"Snapshotting"_ is employed: `[x=1,x=2,x=3,y=9]` can be compacted to `[x=1,y=9]`
