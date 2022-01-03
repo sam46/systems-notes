@@ -49,6 +49,13 @@ consensus/majority/quorum protocol:
 - log contains entire application state from beginning of time: 
   - gets big so _"Snapshotting"_ is employed: `[x=1,x=2,x=3,y=9]` can be compacted to `[x=1,y=9]`
 
+#### Linearizability
+A correct raft implementation is strongly consistent/linearizable:
+- reads/writes behave as if the system is a single machine
+- so reads/writes can be expressed as an ordered sequence that _makes sense™_:
+  - value constaint: write of a value should precede its read in said sequence
+  - time constaint: requests (i.e. a read or a write) that are known to have been sequential, as opposed to concurrent, should retain their order in said sequence
+
 # CRDTs (Redis)
 
 ## Convergent CRDTs
