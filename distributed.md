@@ -1,9 +1,9 @@
 
 # Clocks:
-wallclock/ntp: bad, not always monotonically increasing.
+wallclock/ntp: bad, not always monotonically increasing.  
 OS's provide a monotonically increasing clock, tho it's supposedly buggy/unreliable.
 
-### logical clocks:
+## Logical clocks:
 more about order of events (i.e. timestamp is more like an index), and causality
 #### implementations: 
 lamport clock:
@@ -71,8 +71,8 @@ A correct raft implementation is strongly consistent/linearizable:
   - on client _get_ request: return the state sum, e.g. `sum([2,5,4]) = 11`
 - other replicas may give different responses, but eventually (if clients `put` stop) all replicas converge to a global state
 - state _relation_ needs to be:
- - commutative and associative: must be able to handle gossip-updates in any order
- - idempotent: must be able to handle duplicate/identitcal gossip-updates any number of times
- - [join semi-lattice](https://en.wikipedia.org/wiki/Semilattice): i.e. it's partial order (not every pair of states needs to be comparable), but should still be able to join any two states and obtain a state that's greater than both. e.g. `(1,0,0)` and `(0,1,0)` aren't comparable, but `(1,1,0)` is `>` than both.
+  - commutative and associative: must be able to handle gossip-updates in any order
+  - idempotent: must be able to handle duplicate/identitcal gossip-updates any number of times
+  - [join semi-lattice](https://en.wikipedia.org/wiki/Semilattice): i.e. it's partial order (not every pair of states needs to be comparable), but should still be able to join any two states and obtain a state that's greater than both. e.g. `(1,0,0)` and `(0,1,0)` aren't comparable, but `(1,1,0)` is `>` than both.
  - 👆 the join/merge monotonically-increases the state
 - easy to implement, but a bit chatty, and not all problems can be modeled with CRDTs
